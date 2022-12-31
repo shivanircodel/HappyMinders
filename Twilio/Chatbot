@@ -1,0 +1,114 @@
+function sendMessage(context, event) {
+  const client = context.getTwilioClient();
+  return client.messages
+    .create({
+      from: event.To,
+      to: event.From,
+      body: 'Here you go the Secret reciepe to create a asterpiece in the Musical World. Mesmerize your audience using special ingredients to put them under a spell by instruments like: \n Piano, \n Guitar, \n Drums, \n Bongo, \n Xylophone, \n Trumpet. \n Mark your territory with your voice using the superspell Kareoke.\n May your conquest be fulfilled!',
+    })
+    .then(
+      (resp) => resp,
+      (err) => {
+        console.log(err);
+        return Promise.resolve();
+      }
+    );
+}
+
+/**
+ * Handles the user input gathered in the voice-ivr Function
+ */
+// eslint-disable-next-line consistent-return
+exports.handler = function (context, event, callback) {
+  let UserInput = event.Digits || event.SpeechResult;
+  const twiml = new Twilio.twiml.VoiceResponse();
+
+  if (!UserInput) {
+    twiml.say('Sorry something went wrong. Please call again');
+    return callback(null, twiml);
+  }
+/**
+ * Handles the user voice command of keyword and covert it into digit to call the task related to the assigned digit gathered in the voice-ivr Function
+ */
+  if (UserInput.length > 1) {
+    if (UserInput.toLowerCase().includes('information')) {
+      UserInput = '1';
+    } else if (UserInput.toLowerCase().includes('wizard')) {
+      UserInput = '2';
+    } else if (UserInput.toLowerCase().includes('partytime')) {
+      UserInput = '3';
+    } else if (UserInput.toLowerCase().includes('instruments')) {
+      UserInput = '4';
+    } else if (UserInput.toLowerCase().includes('concert')) {
+      UserInput = '5';
+    }
+  }
+/**
+ * These are the following commands that are executed as per the request of the user
+ */
+  switch (UserInput) {
+    case '1':
+      twiml.say('Welcome to the Paradise of the Music World. Here we would like to hand out magic-wands to our wizarding creators of music. You can choose the wands from a collection of instruments like: Piano, guitar, drums, bongo, xylophone or trumpet. If you want to mark your territory with your beautiful voice use the super spell Karaoke.\n Dual or Jam up with other creators in Concert mode. Hope your journey would be delightful and complete your conquest. Thankyou!');
+      break;
+    case '2':
+      twiml.say(
+        'Dear wizard we are glad that you have taken a step to contact the council at Music is Magic. A sorcerer will soon be in touch with you and help you out so kindly wait a few moments.'
+      );
+      twiml.dial(context.MY_PHONE_NUMBER);
+      break;
+    case '3':
+      twiml.say(
+        'Dear Wizard we are happy to announce your application to the Partytime Forum has been accepted. We would now transfer this call to a conference line and you can start showcasing! '
+      );
+      const conferenceName = 'Snowy Owl';
+      twiml.dial().conference(conferenceName);
+      callback(null, twiml);
+      break;
+    case '4':
+      twiml.say(
+        'It is great to have a wizard stepup ranks to earn the Wizarding wand which is the Instruments to create an unbelievable charm of music. Kindly refer your message reagarding it. Thank you .'
+      );
+      break;
+    case '5':
+      twiml.say(
+        'Thank you for your Enthusiasm Young Wizard. We will contact you soon with the details of the Concert and hope you are ready to take on some awesome sessions. Fair warning that you are going to fall in love with the songs.'
+      );
+      break;
+    default:
+      twiml.say(
+        'We are sorry, we did not recognize your option. Please try again.'
+      );
+      twiml.redirect('voice-ivr');
+  }
+  let request = Promise.resolve();
+  if (UserInput === '4') {
+    request = sendMessage(context, event);
+  } 
+
+  request
+    .then(() => {
+      return callback(null, twiml);
+    })
+    .catch((err) => {
+      return callback(err);
+    });
+};
+exports.handler = function (context, event, callback) {
+  const twiml = new Twilio.twiml.VoiceResponse();
+  const gather = twiml.gather({
+    numDigits: 1,
+    action: 'handle-user-input',
+    hints: 'information, sorcerer, partytime, instruments, concert ',
+    input: 'speech dtmf',
+  });
+  gather.say('Welcome to Music Is Magic. We are glad to onboard you on a journey of Harmonious and Melodious Music that you crave or can create. All creators are known as wizards here. Please be comfortable to use our services and have a great experience with us.');
+  gather.say('Press 1 or say Information if you want to learn about the mystical reality at Music is Magic');
+  gather.say('Press 2 or say Sorcerer to get connected to one of our representatives at Council of Music is Magic');
+  gather.say('Press 3 or say Partytime to connect on conference call with other music enthusiasts and join forces to complete the musical quest together.');
+  gather.say(
+    'Press 4 or say Instruments to receive a text message with names of all the wizarding-wands that is instruments you can use to jam up the sessions and awstruck your community.');
+  gather.say('Press 5 or say Concert to recieve the link for the video conference that pumps adrenaline by joining you in the Master Dome of Live Concert.');
+  twiml.say(`Sorry we are unable to understand your requirement. Please conduct the accpetable action again.`);
+  twiml.redirect();
+  callback(null, twiml);
+};
