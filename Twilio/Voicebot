@@ -1,0 +1,86 @@
+function sendMessage(context, event) {
+  const client = context.getTwilioClient();
+  return client.messages
+    .create({
+      from: event.To,
+      to: event.From,
+      body: 'Speak now or forever hold your peace to speak out your resolutions',
+    })
+    .then(
+      (resp) => resp,
+      (err) => {
+        console.log(err);
+        return Promise.resolve();
+      }
+    );
+}
+
+/**
+ * Handles the user input gathered in the voice-ivr Function
+ */
+// eslint-disable-next-line consistent-return
+exports.handler = function (context, event, callback) {
+  let UserInput = event.Digits || event.SpeechResult;
+  const twiml = new Twilio.twiml.VoiceResponse();
+
+  if (!UserInput) {
+    twiml.say('Sorry something went wrong. Please speak again');
+    return callback(null, twiml);
+  }
+/**
+ * Handles the user voice command of keyword and covert it into digit to call the task related to the assigned digit gathered in the voice-ivr Function
+ */
+  
+/**
+ * These are the following commands that are executed as per the request of the user
+ */
+  switch (UserInput) {
+    case '1':
+      twiml.say('Hello user, thank you for choosing HappyMinder');
+      break;
+    case '2':
+      twiml.say(
+        'Thank you for speaking, please wait for a few minutes for your message to be trnascriped'
+      );
+      twiml.dial(context.MY_PHONE_NUMBER);
+      break;
+    case '3':
+      twiml.say(
+        'Dear user we are happy to announce your message has been transcribed.'
+      );
+      const conferenceName = 'Snowy Owl';
+      twiml.dial().conference(conferenceName);
+      callback(null, twiml);
+      break;
+    default:
+      twiml.say(
+        'We are sorry, we couldn't tell what you are speaking. Please try again.'
+      );
+      twiml.redirect('voice-ivr');
+  }
+  let request = Promise.resolve();
+  if (UserInput === '4') {
+    request = sendMessage(context, event);
+  } 
+
+  request
+    .then(() => {
+      return callback(null, twiml);
+    })
+    .catch((err) => {
+      return callback(err);
+    });
+};
+exports.handler = function (context, event, callback) {
+  const twiml = new Twilio.twiml.VoiceResponse();
+  const gather = twiml.gather({
+    numDigits: 1,
+    action: 'handle-user-input',
+    hints: 'information, sorcerer, partytime, instruments, concert ',
+    input: 'speech dtmf',
+  });
+  gather.say(Speak now or forever hold your peace to speak out your resolutions');
+  twiml.say(`Sorry we are unable to understand your requirement. Please conduct the accpetable action again.`);
+  twiml.redirect();
+  callback(null, twiml);
+};
